@@ -86,8 +86,12 @@ python -m http.server 8000
 
    O GitHub Pages atualiza automaticamente em poucos minutos.
 
-## Atualizando a seção de Projetos
+## Projeto em destaque: MatheusFlow
 
-Quando você tiver projetos reais para mostrar, edite a seção `#projetos` em `index.html`,
-substituindo o estado vazio por cards de projeto (pode reutilizar a estrutura visual dos
-cards de `#conhecimentos` como referência).
+Sistema pessoal para cadastrar clientes, registrar chamados de serviço e acompanhar seus status.
+O protótipo está em `matheusflow/index.html` e utiliza HTML, CSS e JavaScript, com dados
+armazenados localmente no navegador. O esquema inicial para PostgreSQL está em
+`matheusflow/serviceflow.sql`; a API Node.js é uma etapa futura.
+
+Use dados fictícios ao demonstrar o protótipo. A interface ainda não conecta ao banco SQL.
+

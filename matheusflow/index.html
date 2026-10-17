@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MatheusFlow, projeto pessoal de Matheus Silva para gestão de clientes e chamados de serviço.">
+  <title>MatheusFlow | Meus chamados</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="#dashboard" aria-label="MatheusFlow início"><span class="brand-icon">M</span><span>Matheus<span class="brand-light">Flow</span></span></a>
+    <p class="menu-label">MENU PRINCIPAL</p>
+    <a class="nav-link active" href="#dashboard"><span>▦</span> Dashboard</a>
+    <a class="nav-link" href="#cadastro"><span>＋</span> Novo chamado</a>
+    <a class="nav-link" href="#servicos"><span>☷</span> Chamados</a>
+    <div class="sidebar-bottom"><span class="status-dot"></span><span>Protótipo local</span></div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar"><div><p class="eyebrow">GESTÃO INTELIGENTE</p><h1>MatheusFlow</h1></div><span class="user-avatar" aria-label="Matheus Silva">MS</span></header>
+    <section class="intro-panel" aria-labelledby="intro-title">
+      <div class="intro-copy"><p class="intro-kicker">UM PROJETO DE MATHEUS SILVA</p><h2 id="intro-title">Olá, eu sou Matheus.</h2><p>Criei o MatheusFlow como projeto pessoal para praticar desenvolvimento web e organizar o acompanhamento de clientes e chamados em um só lugar.</p><a href="#dashboard" class="intro-link">Conheça o painel <span>↓</span></a></div>
+      <img class="intro-logo" src="media/matheusflow-logo.jpeg" alt="Logo MatheusFlow, marca pessoal de Matheus Silva">
+    </section>
+    <section id="dashboard">
+      <div class="welcome"><div><p class="eyebrow">PAINEL DE CONTROLE</p><h2>Visão geral dos serviços</h2><p>Acompanhe clientes e chamados em um só lugar.</p></div><a href="#cadastro" class="primary-button">＋ Novo chamado</a></div>
+      <div class="stats-grid">
+        <article class="stat-card"><span class="stat-label">Total de chamados</span><strong id="totalServices">0</strong><span class="stat-note">Todos os registros</span></article>
+        <article class="stat-card"><span class="stat-label">Pendentes</span><strong id="pendingServices">0</strong><span class="stat-note">Aguardando atendimento</span></article>
+        <article class="stat-card"><span class="stat-label">Em andamento</span><strong id="progressServices">0</strong><span class="stat-note">Em execução</span></article>
+        <article class="stat-card"><span class="stat-label">Concluídos</span><strong id="completedServices">0</strong><span class="stat-note">Serviços finalizados</span></article>
+      </div>
+    </section>
+
+    <section id="cadastro" class="panel">
+      <div class="section-heading"><div><p class="eyebrow">NOVO REGISTRO</p><h2>Cadastrar chamado</h2></div><span class="form-hint">* Campos obrigatórios</span></div>
+      <form id="serviceForm">
+        <div class="form-grid">
+          <label>Nome do cliente *<input id="clientName" name="clientName" type="text" maxlength="100" placeholder="Ex.: Cliente demonstração" required></label>
+          <label>Serviço solicitado *<input id="serviceName" name="serviceName" type="text" maxlength="120" placeholder="Ex.: Inspeção de impermeabilização" required></label>
+          <label>Prioridade<select id="servicePriority" name="priority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+          <label class="full-width">Descrição<textarea id="serviceDescription" name="description" rows="3" maxlength="1000" placeholder="Descreva a solicitação (sem incluir dados sensíveis)"></textarea></label>
+        </div>
+        <button type="submit" class="primary-button">Cadastrar chamado</button>
+        <p id="formFeedback" class="form-feedback" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section id="servicos" class="panel">
+      <div class="section-heading list-heading"><div><p class="eyebrow">ACOMPANHAMENTO</p><h2>Chamados cadastrados</h2></div><div class="list-controls"><select id="statusFilter" aria-label="Filtrar por status"><option value="todos">Todos os status</option><option value="Pendente">Pendentes</option><option value="Em andamento">Em andamento</option><option value="Concluído">Concluídos</option></select><input id="searchInput" class="search-input" type="search" placeholder="Buscar cliente ou serviço..." aria-label="Buscar chamados"></div></div>
+      <div id="serviceList" class="service-list"></div>
+      <p id="emptyMessage" class="empty-message">Nenhum chamado cadastrado ainda. Use o formulário para começar.</p>
+    </section>
+    <footer>MatheusFlow · Criado por Matheus Silva · Projeto pessoal de ADS <span>Dados salvos neste navegador</span></footer>
+  </main>
+</body>
+</html>

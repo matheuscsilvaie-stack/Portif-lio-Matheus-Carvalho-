@@ -94,4 +94,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
+  /* ---------- Movimento 3D ambiente ---------- */
+  const motionPreference=window.matchMedia('(prefers-reduced-motion: reduce)');
+  if(!motionPreference.matches){
+    const root=document.documentElement;
+    let px=0,py=0,scrollY=0,scheduled=false;
+    const draw=()=>{
+      scheduled=false;
+      const depth=Math.min(scrollY,180)*-.035;
+      root.style.setProperty('--bg-x',`${px*-13}px`);
+      root.style.setProperty('--bg-y',`${py*-10+depth}px`);
+      root.style.setProperty('--bg-rx',`${py*1.15}deg`);
+      root.style.setProperty('--bg-ry',`${px*1.6}deg`);
+      root.style.setProperty('--token-x',`${px*14}px`);
+      root.style.setProperty('--token-y',`${py*10+depth*.55}px`);
+    };
+    const queue=()=>{if(!scheduled){scheduled=true;requestAnimationFrame(draw);}};
+    window.addEventListener('pointermove',event=>{
+      px=(event.clientX/window.innerWidth-.5)*2;
+      py=(event.clientY/window.innerHeight-.5)*2;
+      queue();
+    },{passive:true});
+    window.addEventListener('scroll',()=>{scrollY=window.scrollY;queue();},{passive:true});
+  }
 });
