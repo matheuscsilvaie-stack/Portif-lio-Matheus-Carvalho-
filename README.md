@@ -6,10 +6,19 @@ Portfólio pessoal desenvolvido em HTML, CSS e JavaScript.
 
 - Página principal: `index.html`
 - Cópia de origem: `portfolio.html`
-- Projeto MatheusFlow: `Documentos/ServiceFlow/index.html`
-- Arquivos do MatheusFlow: CSS, JavaScript, esquema SQL e identidade visual em `Documentos/ServiceFlow/`
-- Imagens e fundo animado do portfólio na raiz e em `portfolio-media/`
+- Projeto MatheusFlow: `Documentos/ServiceFlow/`
+- Projeto MindFlow e outros materiais nas pastas correspondentes.
 
-O MatheusFlow é uma demonstração de gestão de clientes, serviços e chamados. Os dados de demonstração ficam no armazenamento local do navegador. O arquivo SQL documenta a estrutura planejada para um banco PostgreSQL; a aplicação ainda não se conecta a uma API.
+## MatheusFlow
 
-Para visualizar localmente, abra `index.html` em um navegador. Para ver o MatheusFlow, abra `Documentos/ServiceFlow/index.html`.
+Aplicação local para registrar clientes e chamados, acompanhar status e visualizar indicadores. A interface usa HTML, CSS e JavaScript; a API é feita em Python e os dados são armazenados em SQLite no arquivo `Documentos/ServiceFlow/serviceflow.db`.
+
+Para iniciar, abra um terminal na pasta `Documentos/ServiceFlow` e execute:
+
+```sh
+python3 server.py
+```
+
+No Windows, use `py server.py` caso `python3` não esteja disponível. Depois acesse http://127.0.0.1:3000. A demonstração hospedada no GitHub Pages não executa a API; consulte o README do projeto para rodá-lo localmente.
+
+Faça backup do arquivo `serviceflow.db` para preservar os chamados. Não publique esse arquivo se contiver dados de clientes.
