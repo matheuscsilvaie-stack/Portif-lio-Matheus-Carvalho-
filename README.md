@@ -11,14 +11,16 @@ Portfólio pessoal desenvolvido em HTML, CSS e JavaScript.
 
 ## MatheusFlow
 
-Aplicação local para registrar clientes e chamados, acompanhar status e visualizar indicadores. A interface usa HTML, CSS e JavaScript; a API é feita em Python e os dados são armazenados em SQLite no arquivo `Documentos/ServiceFlow/serviceflow.db`.
+Aplicação web para registrar clientes e chamados, acompanhar status e visualizar indicadores. O projeto inclui API em Python, persistência local SQLite, autenticação privada e configuração de hospedagem com PostgreSQL no Render.
 
-Para iniciar, abra um terminal na pasta `Documentos/ServiceFlow` e execute:
+Para usar localmente, abra um terminal na pasta `Documentos/ServiceFlow` e execute:
 
 ```sh
 python3 server.py
 ```
 
-No Windows, use `py server.py` caso `python3` não esteja disponível. Depois acesse http://127.0.0.1:3000. A demonstração hospedada no GitHub Pages não executa a API; consulte o README do projeto para rodá-lo localmente.
+No Windows, use `py server.py`. Depois acesse http://127.0.0.1:3000. Os chamados locais ficam no arquivo `serviceflow.db`.
 
-Faça backup do arquivo `serviceflow.db` para preservar os chamados. Não publique esse arquivo se contiver dados de clientes.
+A configuração de hospedagem está em `render.yaml`; os passos e variáveis de segurança estão em [Documentos/ServiceFlow/README.md](Documentos/ServiceFlow/README.md). O link do portfólio será direcionado ao painel hospedado quando o serviço privado estiver publicado. GitHub Pages não executa a API Python.
+
+Não publique `serviceflow.db`, senhas, hashes, `SESSION_SECRET` ou `DATABASE_URL` no GitHub.
