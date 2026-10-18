@@ -8,6 +8,7 @@
   const searchInput = document.querySelector('#searchInput');
   const statusFilter = document.querySelector('#statusFilter');
   const feedback = document.querySelector('#formFeedback');
+  const logoutButton = document.querySelector('#logoutButton');
   let services = [];
 
   async function api(path, options = {}) {
@@ -16,6 +17,10 @@
       ...options
     });
     const payload = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      window.location.replace('/login.html');
+      throw new Error('Sua sessão expirou. Entre novamente.');
+    }
     if (!response.ok) throw new Error(payload.error || 'Não foi possível comunicar com o servidor.');
     return payload;
   }
@@ -163,6 +168,17 @@
 
   searchInput.addEventListener('input', render);
   statusFilter.addEventListener('change', render);
+  api('/session').then(session => {
+    logoutButton.hidden = !session.loginRequired;
+  }).catch(() => { logoutButton.hidden = true; });
+  logoutButton.addEventListener('click', async () => {
+    logoutButton.disabled = true;
+    try {
+      await api('/logout', { method: 'POST', body: '{}' });
+    } finally {
+      window.location.replace('/login.html');
+    }
+  });
   render();
   loadServices();
 })();
