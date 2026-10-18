@@ -1,8 +1,6 @@
 (() => {
   'use strict';
 
-  // Persistência local temporária. No futuro, substitua por chamadas à API Node.js/SQL.
-  const STORAGE_KEY = 'matheusflow.chamados.v1';
   const STATUSES = ['Pendente', 'Em andamento', 'Concluído'];
   const form = document.querySelector('#serviceForm');
   const list = document.querySelector('#serviceList');
@@ -10,25 +8,16 @@
   const searchInput = document.querySelector('#searchInput');
   const statusFilter = document.querySelector('#statusFilter');
   const feedback = document.querySelector('#formFeedback');
-  let services = loadServices();
+  let services = [];
 
-  function loadServices() {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return Array.isArray(saved) ? saved.filter(item => item && typeof item.id === 'string') : [];
-    } catch (error) {
-      return [];
-    }
-  }
-
-  function saveServices() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(services));
-      return true;
-    } catch (error) {
-      showFeedback('Não foi possível salvar neste navegador.', true);
-      return false;
-    }
+  async function api(path, options = {}) {
+    const response = await fetch(`/api${path}`, {
+      headers: { 'Content-Type': 'application/json', ...options.headers },
+      ...options
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || 'Não foi possível comunicar com o servidor.');
+    return payload;
   }
 
   function showFeedback(message, isError = false) {
@@ -69,11 +58,11 @@
       titleLine.append(makeElement('span', badgeClass, service.status));
       const date = new Date(service.createdAt);
       const dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
-      main.append(titleLine, makeElement('p', 'service-meta', `Cliente: ${service.client} · ${dateLabel} · Chamado ${service.id.slice(-6)}`));
+      main.append(titleLine, makeElement('p', 'service-meta', `Cliente: ${service.client} · ${dateLabel} · Chamado ${String(service.id).slice(-6)}`));
       if (service.description) main.append(makeElement('p', 'service-description', service.description));
       const priorityLabel = service.priority === 'urgente' ? 'Urgente' : service.priority === 'alta' ? 'Alta' : 'Normal';
-      const priority = makeElement('span', `priority ${service.priority === 'normal' ? '' : service.priority}`, `Prioridade ${priorityLabel}`);
-      main.append(priority);
+      const priorityClass = service.priority === 'alta' ? 'high' : service.priority === 'urgente' ? 'urgent' : '';
+      main.append(makeElement('span', `priority ${priorityClass}`, `Prioridade ${priorityLabel}`));
 
       const actions = makeElement('div', 'service-actions');
       const select = document.createElement('select');
@@ -86,35 +75,63 @@
         option.selected = service.status === status;
         select.append(option);
       });
-      select.addEventListener('change', () => updateStatus(service.id, select.value));
+      select.addEventListener('change', () => updateStatus(service.id, select));
       const remove = makeElement('button', 'delete-button', 'Excluir');
       remove.type = 'button';
       remove.setAttribute('aria-label', `Excluir chamado ${service.name}`);
-      remove.addEventListener('click', () => deleteService(service.id));
+      remove.addEventListener('click', () => deleteService(service.id, remove));
       actions.append(select, remove);
       article.append(main, actions);
       list.append(article);
     });
   }
 
-  function updateStatus(id, status) {
-    if (!STATUSES.includes(status)) return;
-    const service = services.find(item => item.id === id);
-    if (!service) return;
-    service.status = status;
-    saveServices();
+  async function loadServices() {
+    try {
+      services = await api('/tickets');
+      render();
+    } catch (error) {
+      showFeedback(`${error.message} Verifique se o servidor e o banco estão ativos.`, true);
+      emptyMessage.hidden = false;
+      emptyMessage.textContent = 'Não foi possível carregar os chamados.';
+    }
+  }
+
+  async function updateStatus(id, select) {
+    const service = services.find(item => String(item.id) === String(id));
+    if (!service || !STATUSES.includes(select.value)) return;
+    const previousStatus = service.status;
+    select.disabled = true;
+    try {
+      const updated = await api(`/tickets/${encodeURIComponent(id)}`, {
+        method: 'PATCH', body: JSON.stringify({ status: select.value })
+      });
+      Object.assign(service, updated);
+      showFeedback('Status atualizado.');
+    } catch (error) {
+      service.status = previousStatus;
+      showFeedback(error.message, true);
+    }
     render();
   }
 
-  function deleteService(id) {
-    services = services.filter(item => item.id !== id);
-    saveServices();
-    render();
-    showFeedback('Chamado excluído.');
+  async function deleteService(id, button) {
+    if (!window.confirm('Excluir este chamado permanentemente?')) return;
+    button.disabled = true;
+    try {
+      await api(`/tickets/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      services = services.filter(item => String(item.id) !== String(id));
+      render();
+      showFeedback('Chamado excluído.');
+    } catch (error) {
+      button.disabled = false;
+      showFeedback(error.message, true);
+    }
   }
 
-  form.addEventListener('submit', event => {
+  form.addEventListener('submit', async event => {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
     const data = new FormData(form);
     const client = String(data.get('clientName') || '').trim();
     const name = String(data.get('serviceName') || '').trim();
@@ -122,22 +139,30 @@
       showFeedback('Informe o cliente e o serviço solicitado.', true);
       return;
     }
-    services.unshift({
-      id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      client,
-      name,
-      description: String(data.get('description') || '').trim(),
-      priority: String(data.get('priority') || 'normal'),
-      status: 'Pendente',
-      createdAt: new Date().toISOString()
-    });
-    if (!saveServices()) return;
-    form.reset();
-    render();
-    showFeedback('Chamado cadastrado com sucesso.');
+    submitButton.disabled = true;
+    try {
+      const created = await api('/tickets', {
+        method: 'POST',
+        body: JSON.stringify({
+          client,
+          name,
+          description: String(data.get('description') || '').trim(),
+          priority: String(data.get('priority') || 'normal')
+        })
+      });
+      services.unshift(created);
+      form.reset();
+      render();
+      showFeedback('Chamado cadastrado no banco de dados.');
+    } catch (error) {
+      showFeedback(error.message, true);
+    } finally {
+      submitButton.disabled = false;
+    }
   });
 
   searchInput.addEventListener('input', render);
   statusFilter.addEventListener('change', render);
   render();
+  loadServices();
 })();
