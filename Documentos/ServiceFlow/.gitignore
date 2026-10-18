@@ -1,0 +1,4 @@
+__pycache__/
+serviceflow.db
+serviceflow.db-shm
+serviceflow.db-wal
