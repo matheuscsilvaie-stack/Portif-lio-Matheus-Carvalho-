@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: matheusflow-matheuscsilvaie
+    runtime: python
+    plan: starter
+    region: ohio
+    rootDir: Documentos/ServiceFlow
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: matheusflow-db
+          property: connectionString
+      - key: APP_USERNAME
+        sync: false
+      - key: APP_PASSWORD_HASH
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: COOKIE_SECURE
+        value: "true"
+
+databases:
+  - name: matheusflow-db
+    databaseName: serviceflow
+    user: serviceflow
+    plan: basic-256mb
+    region: ohio
