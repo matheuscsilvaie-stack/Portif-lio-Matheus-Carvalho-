@@ -19,3 +19,4 @@
 @keyframes logoHover{0%,100%{transform:translateY(0) rotateY(-3deg)}50%{transform:translateY(-5px) rotateY(3deg)}}
 @media(max-width:680px){.intro-panel{grid-template-columns:1fr;padding:22px;gap:18px;margin-top:18px}.intro-logo{width:min(100%,280px);justify-self:start}.intro-copy>p:not(.intro-kicker){font-size:12px}.main-content{padding-top:16px}}
 @media(prefers-reduced-motion:reduce){.intro-panel:after,.intro-logo{animation:none!important}.stat-card{transition:none!important}}
+ .topbar-actions{display:flex;align-items:center;gap:10px}.logout-button{border:1px solid #dce3ed;background:#fff;border-radius:7px;padding:9px 12px;color:#485a74;font:600 12px 'DM Sans',sans-serif;cursor:pointer}.logout-button:hover{border-color:#6e91f5;color:#2856d2}.logout-button[hidden]{display:none}
