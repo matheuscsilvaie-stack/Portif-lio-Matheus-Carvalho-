@@ -169,8 +169,11 @@ Failed to create stream fd: Operation not permitted
     try {
       const response = await fetch(FORM_ENDPOINT, {
         method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: new URLSearchParams({
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
           _subject: `Novo chamado MatheusFlow ${ticketNumber(service)}`,
           _template: 'table',
           numero_do_chamado: ticketNumber(service),
