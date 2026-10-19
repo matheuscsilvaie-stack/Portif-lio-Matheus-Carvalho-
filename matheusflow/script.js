@@ -1,8 +1,11 @@
+Failed to create stream fd: Operation not permitted
+Failed to create stream fd: Operation not permitted
+Failed to create stream fd: Operation not permitted
 (() => {
   'use strict';
 
-  // Persistência local temporária. No futuro, substitua por chamadas à API Node.js/SQL.
   const STORAGE_KEY = 'matheusflow.chamados.v1';
+  const FORM_ENDPOINT = 'https://formsubmit.co/ajax/matheusc.silvaie@gmail.com';
   const STATUSES = ['Pendente', 'Em andamento', 'Concluído'];
   const form = document.querySelector('#serviceForm');
   const list = document.querySelector('#serviceList');
@@ -48,17 +51,13 @@
     const query = searchInput.value.trim().toLocaleLowerCase('pt-BR');
     const selectedStatus = statusFilter.value;
     const visible = services.filter(service => {
-      const searchable = `${service.client} ${service.name} ${service.description}`.toLocaleLowerCase('pt-BR');
+      const searchable = `${service.client} ${service.name} ${service.phone || ''} ${service.description}`.toLocaleLowerCase('pt-BR');
       return searchable.includes(query) && (selectedStatus === 'todos' || service.status === selectedStatus);
     });
 
-    document.querySelector('#totalServices').textContent = services.length;
-    document.querySelector('#pendingServices').textContent = services.filter(item => item.status === 'Pendente').length;
-    document.querySelector('#progressServices').textContent = services.filter(item => item.status === 'Em andamento').length;
-    document.querySelector('#completedServices').textContent = services.filter(item => item.status === 'Concluído').length;
     list.replaceChildren();
     emptyMessage.hidden = visible.length > 0;
-    emptyMessage.textContent = services.length === 0 ? 'Nenhum chamado cadastrado ainda. Use o formulário para começar.' : 'Nenhum chamado encontrado com esses filtros.';
+    emptyMessage.textContent = services.length === 0 ? 'Nenhum chamado enviado por este navegador ainda.' : 'Nenhum chamado encontrado com esses filtros.';
 
     visible.forEach(service => {
       const article = makeElement('article', 'service-item');
@@ -70,6 +69,7 @@
       const date = new Date(service.createdAt);
       const dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
       main.append(titleLine, makeElement('p', 'service-meta', `Cliente: ${service.client} · ${dateLabel} · Chamado ${service.id.slice(-6)}`));
+      if (service.phone) main.append(makeElement('p', 'service-meta', `Telefone: ${service.phone}`));
       if (service.description) main.append(makeElement('p', 'service-description', service.description));
       const priorityLabel = service.priority === 'urgente' ? 'Urgente' : service.priority === 'alta' ? 'Alta' : 'Normal';
       const priority = makeElement('span', `priority ${service.priority === 'normal' ? '' : service.priority}`, `Prioridade ${priorityLabel}`);
@@ -97,6 +97,20 @@
     });
   }
 
+  function randomCount(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function renderDemoStats() {
+    const open = randomCount(1, 3);
+    const inProgress = randomCount(0, 2);
+    const resolved = randomCount(2, 4);
+    document.querySelector('#totalServices').textContent = open + inProgress + resolved;
+    document.querySelector('#pendingServices').textContent = open;
+    document.querySelector('#progressServices').textContent = inProgress;
+    document.querySelector('#completedServices').textContent = resolved;
+  }
+
   function updateStatus(id, status) {
     if (!STATUSES.includes(status)) return;
     const service = services.find(item => item.id === id);
@@ -113,31 +127,70 @@
     showFeedback('Chamado excluído.');
   }
 
-  form.addEventListener('submit', event => {
+  form.addEventListener('submit', async event => {
     event.preventDefault();
+    const submitButton = form.querySelector('button[type="submit"]');
     const data = new FormData(form);
     const client = String(data.get('clientName') || '').trim();
     const name = String(data.get('serviceName') || '').trim();
+    const phone = String(data.get('phone') || '').trim();
     if (!client || !name) {
       showFeedback('Informe o cliente e o serviço solicitado.', true);
       return;
     }
-    services.unshift({
+    const description = String(data.get('description') || '').trim();
+    const priority = String(data.get('priority') || 'normal');
+    const service = {
       id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       client,
       name,
-      description: String(data.get('description') || '').trim(),
-      priority: String(data.get('priority') || 'normal'),
+      phone,
+      description,
+      priority,
       status: 'Pendente',
       createdAt: new Date().toISOString()
-    });
-    if (!saveServices()) return;
+    };
+
+    submitButton.disabled = true;
+    services.unshift(service);
+    const savedLocally = saveServices();
+    if (!savedLocally) {
+      services = services.filter(item => item.id !== service.id);
+      submitButton.disabled = false;
+      return;
+    }
     form.reset();
     render();
-    showFeedback('Chamado cadastrado com sucesso.');
+    showFeedback('Chamado cadastrado neste navegador. Enviando por e-mail...');
+    try {
+      const response = await fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+        body: new URLSearchParams({
+          _subject: `Novo chamado MatheusFlow: ${name}`,
+          _template: 'table',
+          cliente: client,
+          telefone: phone || 'Não informado',
+          servico: name,
+          prioridade: priority,
+          descricao: description || 'Não informada'
+        })
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || (result?.success !== true && result?.success !== 'true')) {
+        throw new Error(result?.message || 'O serviço de e-mail não confirmou o envio.');
+      }
+
+      showFeedback('Chamado cadastrado e enviado por e-mail. Se for o primeiro envio, confirme a ativação recebida por e-mail.');
+    } catch (error) {
+      showFeedback(`Chamado cadastrado neste navegador, mas o envio por e-mail falhou: ${error.message}`, true);
+    } finally {
+      submitButton.disabled = false;
+    }
   });
 
   searchInput.addEventListener('input', render);
   statusFilter.addEventListener('change', render);
+  renderDemoStats();
   render();
 })();
