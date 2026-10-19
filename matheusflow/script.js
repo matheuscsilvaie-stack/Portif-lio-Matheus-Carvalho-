@@ -52,6 +52,10 @@ Failed to create stream fd: Operation not permitted
   }
 
   function render() {
+    document.querySelector('#totalServices').textContent = services.length;
+    document.querySelector('#pendingServices').textContent = services.filter(item => item.status === 'Pendente').length;
+    document.querySelector('#progressServices').textContent = services.filter(item => item.status === 'Em andamento').length;
+    document.querySelector('#completedServices').textContent = services.filter(item => item.status === 'Concluído').length;
     const query = searchInput.value.trim().toLocaleLowerCase('pt-BR');
     const selectedStatus = statusFilter.value;
     const visible = services.filter(service => {
