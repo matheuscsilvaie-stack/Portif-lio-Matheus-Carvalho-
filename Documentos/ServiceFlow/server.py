@@ -485,6 +485,9 @@ def main():
         print(password_hash(password))
         return
 
+    if not USE_POSTGRES and not AUTH_ENABLED:
+        raise SystemExit('Configure o acesso administrativo primeiro: python server.py --configure-admin')
+
     configure_auth()
     initialize_db()
     host = '0.0.0.0' if USE_POSTGRES else '127.0.0.1'
