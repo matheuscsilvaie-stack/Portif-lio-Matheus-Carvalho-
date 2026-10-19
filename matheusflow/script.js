@@ -101,20 +101,6 @@ Failed to create stream fd: Operation not permitted
     });
   }
 
-  function randomCount(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  function renderDemoStats() {
-    const open = randomCount(1, 3);
-    const inProgress = randomCount(0, 2);
-    const resolved = randomCount(2, 4);
-    document.querySelector('#totalServices').textContent = open + inProgress + resolved;
-    document.querySelector('#pendingServices').textContent = open;
-    document.querySelector('#progressServices').textContent = inProgress;
-    document.querySelector('#completedServices').textContent = resolved;
-  }
-
   function updateStatus(id, status) {
     if (!STATUSES.includes(status)) return;
     const service = services.find(item => item.id === id);
@@ -199,6 +185,5 @@ Failed to create stream fd: Operation not permitted
 
   searchInput.addEventListener('input', render);
   statusFilter.addEventListener('change', render);
-  renderDemoStats();
   render();
 })();
