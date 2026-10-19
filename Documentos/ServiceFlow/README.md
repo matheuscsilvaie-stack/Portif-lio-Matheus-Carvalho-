@@ -4,13 +4,21 @@ O painel pode rodar localmente com SQLite ou ser publicado sem mensalidade com o
 
 ## Uso local
 
-Abra um terminal nesta pasta e execute:
+Configure o acesso administrativo uma vez. O usuário padrão é `adm`; digite a senha desejada quando o terminal solicitar. A senha é armazenada como hash no arquivo local ignorado pelo Git:
+
+```sh
+python3 server.py --configure-admin
+```
+
+Depois inicie o servidor:
 
 ```sh
 python3 server.py
 ```
 
 No Windows, tente `py server.py`. Acesse **http://127.0.0.1:3000**. O servidor local fica restrito a este computador e grava os chamados em `serviceflow.db`. Para encerrar, pressione `Ctrl+C`.
+
+No formulário de configuração, use o usuário `adm` e a senha administrativa escolhida. Uma senha de seis dígitos é fraca; para guardar dados reais de clientes, escolha uma senha longa e exclusiva.
 
 ## Publicar gratuitamente com login privado
 
@@ -26,7 +34,7 @@ O servidor web fica no plano gratuito do Render; o PostgreSQL fica no plano grat
    python3 server.py --hash-password
    ```
 
-5. Defina `APP_USERNAME`, `APP_PASSWORD_HASH` (o hash exibido) e `SESSION_SECRET` (gere com `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`). Mantenha `COOKIE_SECURE=true`.
+5. Defina `APP_USERNAME`, `APP_PASSWORD_HASH` e `SESSION_SECRET` nas variáveis privadas do Render. Para obter valores compatíveis com a senha administrativa, execute `python3 server.py --configure-admin` localmente e copie os valores de `.env` diretamente para o painel Render; não os envie pelo chat nem os commite no GitHub. Mantenha `COOKIE_SECURE=true` no Render.
 6. Abra o endereço HTTPS do serviço Render e entre com usuário e senha. O primeiro acesso pode demorar enquanto o serviço e o banco acordam.
 
 O login usa uma senha derivada com scrypt e sessões assinadas em cookie HttpOnly. A API e a página de chamados exigem sessão. Nunca coloque senhas, `SESSION_SECRET`, `DATABASE_URL` ou `serviceflow.db` no GitHub. Faça backup periódico do PostgreSQL. Para dados importantes de clientes, considere um plano com backups e disponibilidade adequados.
