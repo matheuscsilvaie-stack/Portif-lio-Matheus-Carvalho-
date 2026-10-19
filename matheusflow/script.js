@@ -47,6 +47,10 @@ Failed to create stream fd: Operation not permitted
     return element;
   }
 
+  function ticketNumber(service) {
+    return `MF-${service.id.slice(-6).toUpperCase()}`;
+  }
+
   function render() {
     const query = searchInput.value.trim().toLocaleLowerCase('pt-BR');
     const selectedStatus = statusFilter.value;
@@ -68,7 +72,7 @@ Failed to create stream fd: Operation not permitted
       titleLine.append(makeElement('span', badgeClass, service.status));
       const date = new Date(service.createdAt);
       const dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
-      main.append(titleLine, makeElement('p', 'service-meta', `Cliente: ${service.client} · ${dateLabel} · Chamado ${service.id.slice(-6)}`));
+      main.append(titleLine, makeElement('p', 'service-meta', `Cliente: ${service.client} · ${dateLabel} · Chamado ${ticketNumber(service)}`));
       if (service.phone) main.append(makeElement('p', 'service-meta', `Telefone: ${service.phone}`));
       if (service.description) main.append(makeElement('p', 'service-description', service.description));
       const priorityLabel = service.priority === 'urgente' ? 'Urgente' : service.priority === 'alta' ? 'Alta' : 'Normal';
@@ -167,11 +171,12 @@ Failed to create stream fd: Operation not permitted
         method: 'POST',
         headers: { Accept: 'application/json' },
         body: new URLSearchParams({
-          _subject: `Novo chamado MatheusFlow: ${name}`,
+          _subject: `Novo chamado MatheusFlow ${ticketNumber(service)}`,
           _template: 'table',
-          cliente: client,
+          numero_do_chamado: ticketNumber(service),
+          nome_da_pessoa: client,
+          o_que_esta_solicitando: name,
           telefone: phone || 'Não informado',
-          servico: name,
           prioridade: priority,
           descricao: description || 'Não informada'
         })
