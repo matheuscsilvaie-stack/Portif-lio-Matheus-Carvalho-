@@ -1,3 +1,6 @@
+Failed to create stream fd: Operation not permitted
+Failed to create stream fd: Operation not permitted
+Failed to create stream fd: Operation not permitted
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -15,7 +18,7 @@
     <a class="nav-link active" href="#dashboard"><span>▦</span> Dashboard</a>
     <a class="nav-link" href="#cadastro"><span>＋</span> Novo chamado</a>
     <a class="nav-link" href="#servicos"><span>☷</span> Chamados</a>
-    <div class="sidebar-bottom"><span class="status-dot"></span><span>Protótipo local</span></div>
+    <div class="sidebar-bottom"><span class="status-dot"></span><span>GitHub Pages</span></div>
   </aside>
 
   <main class="main-content">
@@ -25,13 +28,14 @@
       <img class="intro-logo" src="media/matheusflow-logo.jpeg" alt="Logo MatheusFlow, marca pessoal de Matheus Silva">
     </section>
     <section id="dashboard">
-      <div class="welcome"><div><p class="eyebrow">PAINEL DE CONTROLE</p><h2>Visão geral dos serviços</h2><p>Acompanhe clientes e chamados em um só lugar.</p></div><a href="#cadastro" class="primary-button">＋ Novo chamado</a></div>
+      <div class="welcome"><div><p class="eyebrow">PAINEL DE CONTROLE</p><h2>Visão geral dos serviços</h2><p>Os números abaixo são uma simulação; os chamados enviados chegam por e-mail.</p></div><a href="#cadastro" class="primary-button">＋ Novo chamado</a></div>
       <div class="stats-grid">
-        <article class="stat-card"><span class="stat-label">Total de chamados</span><strong id="totalServices">0</strong><span class="stat-note">Todos os registros</span></article>
-        <article class="stat-card"><span class="stat-label">Pendentes</span><strong id="pendingServices">0</strong><span class="stat-note">Aguardando atendimento</span></article>
-        <article class="stat-card"><span class="stat-label">Em andamento</span><strong id="progressServices">0</strong><span class="stat-note">Em execução</span></article>
-        <article class="stat-card"><span class="stat-label">Concluídos</span><strong id="completedServices">0</strong><span class="stat-note">Serviços finalizados</span></article>
+        <article class="stat-card"><span class="stat-label">Chamados (fictício)</span><strong id="totalServices">0</strong><span class="stat-note">Exemplo demonstrativo</span></article>
+        <article class="stat-card"><span class="stat-label">Em aberto (fictício)</span><strong id="pendingServices">0</strong><span class="stat-note">Exemplo demonstrativo</span></article>
+        <article class="stat-card"><span class="stat-label">Em andamento (fictício)</span><strong id="progressServices">0</strong><span class="stat-note">Exemplo demonstrativo</span></article>
+        <article class="stat-card"><span class="stat-label">Resolvidos (fictício)</span><strong id="completedServices">0</strong><span class="stat-note">Exemplo demonstrativo</span></article>
       </div>
+      <p class="demo-disclaimer">Os números são pequenos, aleatórios e mudam ao abrir a página. Não representam chamados reais.</p>
     </section>
 
     <section id="cadastro" class="panel">
@@ -40,20 +44,22 @@
         <div class="form-grid">
           <label>Nome do cliente *<input id="clientName" name="clientName" type="text" maxlength="100" placeholder="Ex.: Cliente demonstração" required></label>
           <label>Serviço solicitado *<input id="serviceName" name="serviceName" type="text" maxlength="120" placeholder="Ex.: Inspeção de impermeabilização" required></label>
+          <label>Telefone (opcional)<input id="clientPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Ex.: (13) 99999-0000"></label>
           <label>Prioridade<select id="servicePriority" name="priority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
           <label class="full-width">Descrição<textarea id="serviceDescription" name="description" rows="3" maxlength="1000" placeholder="Descreva a solicitação (sem incluir dados sensíveis)"></textarea></label>
         </div>
         <button type="submit" class="primary-button">Cadastrar chamado</button>
+        <p class="form-hint">Os dados serão encaminhados pelo FormSubmit para matheusc.silvaie@gmail.com. Esse endereço também fica visível no código público. Não inclua dados pessoais sensíveis.</p>
         <p id="formFeedback" class="form-feedback" role="status" aria-live="polite"></p>
       </form>
     </section>
 
     <section id="servicos" class="panel">
-      <div class="section-heading list-heading"><div><p class="eyebrow">ACOMPANHAMENTO</p><h2>Chamados cadastrados</h2></div><div class="list-controls"><select id="statusFilter" aria-label="Filtrar por status"><option value="todos">Todos os status</option><option value="Pendente">Pendentes</option><option value="Em andamento">Em andamento</option><option value="Concluído">Concluídos</option></select><input id="searchInput" class="search-input" type="search" placeholder="Buscar cliente ou serviço..." aria-label="Buscar chamados"></div></div>
+      <div class="section-heading list-heading"><div><p class="eyebrow">NESTE NAVEGADOR</p><h2>Chamados enviados por você</h2></div><div class="list-controls"><select id="statusFilter" aria-label="Filtrar por status"><option value="todos">Todos os status</option><option value="Pendente">Pendentes</option><option value="Em andamento">Em andamento</option><option value="Concluído">Concluídos</option></select><input id="searchInput" class="search-input" type="search" placeholder="Buscar cliente ou serviço..." aria-label="Buscar chamados"></div></div>
       <div id="serviceList" class="service-list"></div>
-      <p id="emptyMessage" class="empty-message">Nenhum chamado cadastrado ainda. Use o formulário para começar.</p>
+      <p id="emptyMessage" class="empty-message">Nenhum chamado enviado por este navegador ainda.</p>
     </section>
-    <footer>MatheusFlow · Criado por Matheus Silva · Projeto pessoal de ADS <span>Dados salvos neste navegador</span></footer>
+    <footer>MatheusFlow · Criado por Matheus Silva · Projeto pessoal de ADS <span>Envio por e-mail · listagem salva só neste navegador</span></footer>
   </main>
 </body>
 </html>
