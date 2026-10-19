@@ -9,7 +9,7 @@ Failed to create stream fd: Operation not permitted
   <meta name="description" content="MatheusFlow, projeto pessoal de Matheus Silva para gestão de clientes e chamados de serviço.">
   <title>MatheusFlow | Meus chamados</title>
   <link rel="stylesheet" href="style.css">
-  <script src="script.js?v=20261019-4" defer></script>
+  <script src="script.js?v=20261019-5" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -28,21 +28,20 @@ Failed to create stream fd: Operation not permitted
       <img class="intro-logo" src="media/matheusflow-logo.jpeg" alt="Logo MatheusFlow, marca pessoal de Matheus Silva">
     </section>
     <section id="dashboard">
-      <div class="welcome"><div><p class="eyebrow">PAINEL DE CONTROLE</p><h2>Visão geral dos serviços</h2><p>Os números abaixo são uma simulação; os chamados enviados chegam por e-mail.</p></div><a href="#cadastro" class="primary-button">＋ Novo chamado</a></div>
+      <div class="welcome"><div><p class="eyebrow">PAINEL DE CONTROLE</p><h2>Visão geral dos serviços</h2></div><a href="#cadastro" class="primary-button">＋ Novo chamado</a></div>
       <div class="stats-grid">
-        <article class="stat-card"><span class="stat-label">Chamados</span><strong id="totalServices">8</strong><span class="stat-note">Exemplo demonstrativo</span></article>
-        <article class="stat-card"><span class="stat-label">Em aberto</span><strong id="pendingServices">3</strong><span class="stat-note">Exemplo demonstrativo</span></article>
-        <article class="stat-card"><span class="stat-label">Em andamento</span><strong id="progressServices">2</strong><span class="stat-note">Exemplo demonstrativo</span></article>
-        <article class="stat-card"><span class="stat-label">Resolvidos</span><strong id="completedServices">3</strong><span class="stat-note">Exemplo demonstrativo</span></article>
+        <article class="stat-card"><span class="stat-label">Chamados</span><strong id="totalServices">8</strong></article>
+        <article class="stat-card"><span class="stat-label">Em aberto</span><strong id="pendingServices">3</strong></article>
+        <article class="stat-card"><span class="stat-label">Em andamento</span><strong id="progressServices">2</strong></article>
+        <article class="stat-card"><span class="stat-label">Resolvidos</span><strong id="completedServices">3</strong></article>
       </div>
-      <p class="demo-disclaimer">Os números são pequenos, aleatórios e mudam ao abrir a página. Não representam chamados reais.</p>
     </section>
 
     <section id="cadastro" class="panel">
       <div class="section-heading"><div><p class="eyebrow">NOVO REGISTRO</p><h2>Cadastrar chamado</h2></div><span class="form-hint">* Campos obrigatórios</span></div>
       <form id="serviceForm">
         <div class="form-grid">
-          <label>Nome do cliente *<input id="clientName" name="clientName" type="text" maxlength="100" placeholder="Ex.: Cliente demonstração" required></label>
+          <label>Nome do cliente *<input id="clientName" name="clientName" type="text" maxlength="100" placeholder="Ex.: Matheus Silva" required></label>
           <label>Serviço solicitado *<input id="serviceName" name="serviceName" type="text" maxlength="120" placeholder="Ex.: Inspeção de impermeabilização" required></label>
           <label>Telefone (opcional)<input id="clientPhone" name="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="30" placeholder="Ex.: (13) 99999-0000"></label>
           <label>Prioridade<select id="servicePriority" name="priority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
