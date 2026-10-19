@@ -17,6 +17,23 @@ import sqlite3
 import sys
 import time
 
+def load_local_env():
+    """Load ignored local secrets without requiring python-dotenv."""
+    env_file = Path(__file__).resolve().parent / '.env'
+    if not env_file.is_file():
+        return
+    for line in env_file.read_text(encoding='utf-8').splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#') or '=' not in stripped:
+            continue
+        key, value = stripped.split('=', 1)
+        key = key.strip()
+        if key and key not in os.environ:
+            os.environ[key] = value.strip().strip('"').strip("'")
+
+
+load_local_env()
+
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get('SERVICEFLOW_DB', BASE_DIR / 'serviceflow.db'))
 DATABASE_URL = os.environ.get('DATABASE_URL', '').strip()
@@ -413,7 +430,7 @@ class Handler(SimpleHTTPRequestHandler):
 def configure_auth():
     if not AUTH_ENABLED:
         return
-    if psycopg is None:
+    if USE_POSTGRES and psycopg is None:
         raise RuntimeError('Dependência PostgreSQL ausente. Execute pip install -r requirements.txt.')
     if not APP_USERNAME or not APP_PASSWORD_HASH or not SESSION_SECRET:
         raise RuntimeError('Configure APP_USERNAME, APP_PASSWORD_HASH e SESSION_SECRET nas variáveis do serviço.')
@@ -431,6 +448,35 @@ def configure_auth():
 
 
 def main():
+    if sys.argv[1:] == ['--configure-admin']:
+        username = input('Usuário administrativo [adm]: ').strip() or 'adm'
+        if not username.isascii() or len(username) > 100:
+            raise SystemExit('O usuário deve ter até 100 caracteres ASCII.')
+        password = getpass.getpass('Senha administrativa: ')
+        confirmation = getpass.getpass('Repita a senha: ')
+        if len(password) < 6 or password != confirmation:
+            raise SystemExit('As senhas devem ser iguais e ter pelo menos 6 caracteres.')
+        env_file = BASE_DIR / '.env'
+        values = {}
+        if env_file.is_file():
+            for line in env_file.read_text(encoding='utf-8').splitlines():
+                if '=' in line and not line.lstrip().startswith('#'):
+                    key, value = line.split('=', 1)
+                    values[key.strip()] = value.strip()
+        values.update({
+            'APP_USERNAME': username,
+            'APP_PASSWORD_HASH': password_hash(password),
+            'SESSION_SECRET': secrets.token_urlsafe(48),
+            'COOKIE_SECURE': 'false',
+        })
+        env_file.write_text(''.join(f'{key}={value}\n' for key, value in values.items()), encoding='utf-8')
+        try:
+            os.chmod(env_file, 0o600)
+        except OSError:
+            pass
+        print(f'Credenciais locais configuradas em {env_file.name}. Não compartilhe esse arquivo.')
+        return
+
     if sys.argv[1:] == ['--hash-password']:
         password = getpass.getpass('Nova senha de acesso: ')
         confirmation = getpass.getpass('Repita a senha: ')
