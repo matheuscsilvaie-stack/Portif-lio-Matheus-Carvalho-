@@ -1,8 +1,5 @@
-Failed to create stream fd: Operation not permitted
-Failed to create stream fd: Operation not permitted
-Failed to create stream fd: Operation not permitted
-const CACHE_NAME = 'mindflow-app-v2';
-const APP_FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+const CACHE_NAME = 'mindflow-app-v3';
+const APP_FILES = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', event => {
   event.waitUntil(
