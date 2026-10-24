@@ -3,6 +3,7 @@
 
   const STORAGE_KEY = 'matheusflow.chamados.v1';
   const FORM_ENDPOINT = 'https://formsubmit.co/ajax/matheusc.silvaie@gmail.com';
+  const API_ENDPOINT = 'https://matheusflow-matheuscsilvaie.onrender.com/api/public/tickets';
   const STATUSES = ['Pendente', 'Em andamento', 'Concluído'];
   const form = document.querySelector('#serviceForm');
   const list = document.querySelector('#serviceList');
@@ -131,6 +132,7 @@
     }
     const description = String(data.get('description') || '').trim();
     const priority = String(data.get('priority') || 'normal');
+    const website = String(data.get('website') || '');
     const service = {
       id: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       client,
@@ -152,8 +154,9 @@
     }
     form.reset();
     render();
-    showFeedback('Chamado cadastrado neste navegador. Enviando por e-mail...');
-    try {
+    showFeedback('Chamado cadastrado neste navegador. Enviando...');
+    const sendEmail = async () => {
+      if (website) return;
       const response = await fetch(FORM_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -175,10 +178,22 @@
       if (!response.ok || (result?.success !== true && result?.success !== 'true')) {
         throw new Error(result?.message || 'O serviço de e-mail não confirmou o envio.');
       }
-
-      showFeedback('Chamado cadastrado e enviado por e-mail. Se for o primeiro envio, confirme a ativação recebida por e-mail.');
+    };
+    const sendToServer = async () => {
+      const response = await fetch(API_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client, name, phone, priority, description, website: website })
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || 'O servidor não confirmou o recebimento.');
+    };
+    try {
+      await Promise.any([sendEmail(), sendToServer()]);
+      showFeedback('Chamado cadastrado e enviado. Obrigado!');
     } catch (error) {
-      showFeedback(`Chamado cadastrado neste navegador, mas o envio por e-mail falhou: ${error.message}`, true);
+      const reason = error.errors?.[0] || error;
+      showFeedback(`Chamado cadastrado neste navegador, mas o envio falhou: ${reason.message}`, true);
     } finally {
       submitButton.disabled = false;
     }

@@ -6,7 +6,7 @@
   <meta name="description" content="MatheusFlow, projeto pessoal de Matheus Silva para gestão de clientes e chamados de serviço.">
   <title>MatheusFlow | Meus chamados</title>
   <link rel="stylesheet" href="style.css">
-  <script src="script.js?v=20261023-1" defer></script>
+  <script src="script.js?v=20261023-2" defer></script>
 </head>
 <body>
   <aside class="sidebar">
@@ -44,6 +44,7 @@
           <label>Prioridade<select id="servicePriority" name="priority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
           <label class="full-width">Descrição<textarea id="serviceDescription" name="description" rows="3" maxlength="1000" placeholder="Descreva a solicitação (sem incluir dados sensíveis)"></textarea></label>
         </div>
+        <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px">
         <button type="submit" class="primary-button">Cadastrar chamado</button>
         <p class="form-hint">Os dados serão encaminhados pelo FormSubmit para matheusc.silvaie@gmail.com. Esse endereço também fica visível no código público. Não inclua dados pessoais sensíveis.</p>
         <p id="formFeedback" class="form-feedback" role="status" aria-live="polite"></p>

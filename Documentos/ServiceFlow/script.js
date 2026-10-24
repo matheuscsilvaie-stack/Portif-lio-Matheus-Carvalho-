@@ -64,6 +64,7 @@
       const date = new Date(service.createdAt);
       const dateLabel = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
       main.append(titleLine, makeElement('p', 'service-meta', `Cliente: ${service.client} · ${dateLabel} · Chamado ${String(service.id).slice(-6)}`));
+      if (service.phone) main.append(makeElement('p', 'service-meta', `Telefone: ${service.phone}`));
       if (service.description) main.append(makeElement('p', 'service-description', service.description));
       const priorityLabel = service.priority === 'urgente' ? 'Urgente' : service.priority === 'alta' ? 'Alta' : 'Normal';
       const priorityClass = service.priority === 'alta' ? 'high' : service.priority === 'urgente' ? 'urgent' : '';

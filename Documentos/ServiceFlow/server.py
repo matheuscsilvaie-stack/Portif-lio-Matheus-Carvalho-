@@ -15,6 +15,7 @@ import os
 import secrets
 import sqlite3
 import sys
+import threading
 import time
 
 def load_local_env():
@@ -48,6 +49,15 @@ APP_PASSWORD_HASH = os.environ.get('APP_PASSWORD_HASH', '')
 SESSION_SECRET = os.environ.get('SESSION_SECRET', '')
 AUTH_ENABLED = USE_POSTGRES or bool(APP_USERNAME or APP_PASSWORD_HASH or SESSION_SECRET)
 COOKIE_SECURE = os.environ.get('COOKIE_SECURE', 'true' if USE_POSTGRES else 'false').lower() == 'true'
+PUBLIC_FORM_ORIGINS = {
+    origin.strip().rstrip('/') for origin in
+    os.environ.get('PUBLIC_FORM_ORIGINS', 'https://matheuscsilvaie-stack.github.io').split(',')
+    if origin.strip()
+}
+PUBLIC_RATE_LIMIT = 5
+PUBLIC_RATE_WINDOW = 15 * 60
+public_submissions = {}
+public_submissions_lock = threading.Lock()
 
 try:
     import psycopg
@@ -132,6 +142,7 @@ def initialize_db():
             );
             CREATE INDEX IF NOT EXISTS tickets_status_created_at_idx ON tickets (status, created_at DESC);
             CREATE INDEX IF NOT EXISTS tickets_client_id_idx ON tickets (client_id);
+            ALTER TABLE tickets ADD COLUMN IF NOT EXISTS phone VARCHAR(30) NOT NULL DEFAULT '';
         '''
     else:
         DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -158,6 +169,10 @@ def initialize_db():
         if not USE_POSTGRES:
             db.execute('PRAGMA journal_mode = WAL')
         db.executescript(schema)
+        if not USE_POSTGRES:
+            columns = {row['name'] for row in db.execute('PRAGMA table_info(tickets)').fetchall()}
+            if 'phone' not in columns:
+                db.execute("ALTER TABLE tickets ADD COLUMN phone TEXT NOT NULL DEFAULT '' CHECK(length(phone) <= 30)")
 
 
 def encode_urlsafe(data):
@@ -225,10 +240,57 @@ def ticket_dict(row):
         'client': row['client'],
         'name': row['name'],
         'description': row['description'],
+        'phone': row['phone'],
         'priority': row['priority'],
         'status': row['status'],
         'createdAt': created,
     }
+
+
+def parse_ticket(data):
+    def text(key, default=''):
+        value = data.get(key, default)
+        return value.strip() if isinstance(value, str) else None
+
+    client, name, description, phone = text('client'), text('name'), text('description'), text('phone')
+    priority = data.get('priority', 'normal')
+    if (not client or len(client) > 100 or not name or len(name) > 120
+            or description is None or len(description) > 1000
+            or phone is None or len(phone) > 30
+            or not isinstance(priority, str) or priority not in PRIORITIES):
+        return None
+    return client, name, description, phone, priority
+
+
+def create_ticket(client, name, description, phone, priority):
+    with database() as db:
+        client_id = db.execute(
+            'INSERT INTO clients (name) VALUES (?) RETURNING id', (client,)
+        ).fetchone()['id']
+        ticket_id = db.execute('''
+            INSERT INTO tickets (client_id, service_name, description, phone, priority)
+            VALUES (?, ?, ?, ?, ?) RETURNING id
+        ''', (client_id, name, description, phone, priority)).fetchone()['id']
+        row = db.execute('''
+            SELECT t.id, c.name AS client, t.service_name AS name, t.description, t.phone,
+                   t.priority, t.status, t.created_at AS "createdAt"
+            FROM tickets t JOIN clients c ON c.id = t.client_id WHERE t.id = ?
+        ''', (ticket_id,)).fetchone()
+    return ticket_dict(row)
+
+
+def allow_public_submission(address):
+    now = time.monotonic()
+    with public_submissions_lock:
+        for key in [key for key, times in public_submissions.items() if not times or now - times[-1] > PUBLIC_RATE_WINDOW]:
+            del public_submissions[key]
+        recent = [moment for moment in public_submissions.get(address, []) if now - moment < PUBLIC_RATE_WINDOW]
+        if len(recent) >= PUBLIC_RATE_LIMIT:
+            public_submissions[address] = recent
+            return False
+        recent.append(now)
+        public_submissions[address] = recent
+        return True
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -263,6 +325,42 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header('Location', '/login.html')
         self.send_header('Cache-Control', 'no-store')
         self.end_headers()
+
+    def cors_headers(self):
+        origin = (self.headers.get('Origin') or '').rstrip('/')
+        if origin not in PUBLIC_FORM_ORIGINS:
+            return []
+        return [('Access-Control-Allow-Origin', origin), ('Vary', 'Origin')]
+
+    def client_address_key(self):
+        forwarded = self.headers.get('X-Forwarded-For', '')
+        return forwarded.split(',')[0].strip() or self.client_address[0]
+
+    def do_OPTIONS(self):
+        if urlparse(self.path).path != '/api/public/tickets' or not self.cors_headers():
+            return self.send_json(404, {'error': 'Rota não encontrada.'})
+        self.send_json(204, None, self.cors_headers() + [
+            ('Access-Control-Allow-Methods', 'POST, OPTIONS'),
+            ('Access-Control-Allow-Headers', 'Content-Type'),
+            ('Access-Control-Max-Age', '86400'),
+        ])
+
+    def handle_public_ticket(self, data):
+        cors = self.cors_headers()
+        if not cors:
+            return self.send_json(403, {'error': 'Origem não autorizada.'})
+        if data.get('website'):
+            return self.send_json(201, {'ok': True}, cors)
+        fields = parse_ticket(data)
+        if fields is None:
+            return self.send_json(400, {'error': 'Confira os campos e tente novamente.'}, cors)
+        if not allow_public_submission(self.client_address_key()):
+            return self.send_json(429, {'error': 'Muitos chamados enviados. Tente novamente mais tarde.'}, cors)
+        try:
+            ticket = create_ticket(*fields)
+            self.send_json(201, {'ok': True, 'id': ticket['id']}, cors)
+        except DB_ERRORS:
+            self.send_json(500, {'error': 'Erro ao gravar o chamado no banco de dados.'}, cors)
 
     def read_json(self):
         try:
@@ -299,7 +397,7 @@ class Handler(SimpleHTTPRequestHandler):
             try:
                 with database() as db:
                     rows = db.execute('''
-                        SELECT t.id, c.name AS client, t.service_name AS name, t.description,
+                        SELECT t.id, c.name AS client, t.service_name AS name, t.description, t.phone,
                                t.priority, t.status, t.created_at AS "createdAt"
                         FROM tickets t JOIN clients c ON c.id = t.client_id
                         ORDER BY t.created_at DESC, t.id DESC
@@ -349,35 +447,19 @@ class Handler(SimpleHTTPRequestHandler):
                 cookie += '; Secure'
             return self.send_json(200, {'ok': True}, [('Set-Cookie', cookie)])
 
+        if path == '/api/public/tickets':
+            return self.handle_public_ticket(data)
+
         if path != '/api/tickets':
             return self.send_json(404, {'error': 'Rota não encontrada.'})
         if not self.authenticated():
             return self.send_json(401, {'error': 'Faça login para cadastrar chamados.'})
 
-        client = data.get('client', '').strip() if isinstance(data.get('client'), str) else ''
-        name = data.get('name', '').strip() if isinstance(data.get('name'), str) else ''
-        description = data.get('description', '').strip() if isinstance(data.get('description', ''), str) else None
-        priority = data.get('priority', 'normal')
-        if (not client or len(client) > 100 or not name or len(name) > 120
-                or description is None or len(description) > 1000
-                or not isinstance(priority, str) or priority not in PRIORITIES):
+        fields = parse_ticket(data)
+        if fields is None:
             return self.send_json(400, {'error': 'Confira os campos e tente novamente.'})
-
         try:
-            with database() as db:
-                client_id = db.execute(
-                    'INSERT INTO clients (name) VALUES (?) RETURNING id', (client,)
-                ).fetchone()['id']
-                ticket_id = db.execute('''
-                    INSERT INTO tickets (client_id, service_name, description, priority)
-                    VALUES (?, ?, ?, ?) RETURNING id
-                ''', (client_id, name, description, priority)).fetchone()['id']
-                row = db.execute('''
-                    SELECT t.id, c.name AS client, t.service_name AS name, t.description,
-                           t.priority, t.status, t.created_at AS "createdAt"
-                    FROM tickets t JOIN clients c ON c.id = t.client_id WHERE t.id = ?
-                ''', (ticket_id,)).fetchone()
-            self.send_json(201, ticket_dict(row))
+            self.send_json(201, create_ticket(*fields))
         except DB_ERRORS:
             self.send_json(500, {'error': 'Erro ao gravar o chamado no banco de dados.'})
 
