@@ -1,6 +1,3 @@
-Failed to create stream fd: Operation not permitted
-Failed to create stream fd: Operation not permitted
-Failed to create stream fd: Operation not permitted
 # Urbanix · Cidade Invisível
 
 **Demonstração pública:** [Abrir Urbanix](https://matheuscsilvaie-stack.github.io/Portif-lio-Matheus-Carvalho-/urbanix/). No GitHub Pages, use `adm` / `adm`; esta versão é uma prévia estática e guarda os relatos apenas no navegador.
