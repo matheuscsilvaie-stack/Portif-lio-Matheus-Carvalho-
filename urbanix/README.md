@@ -23,9 +23,9 @@ O banco SQLite é criado em `instance/urbanix.sqlite3`. Para escolher outro cami
 
 ## O que o MVP oferece
 
-- Cadastro de ocorrências com categoria, descrição, gravidade informada e ponto marcado no mapa.
+- Cadastro de ocorrências com categoria, descrição, gravidade informada, foto opcional e ponto marcado no mapa.
 - Persistência local em SQLite por meio da API Flask; se a API estiver indisponível, os novos registros ficam no navegador atual.
-- Mapa Leaflet com base OpenStreetMap, visualização por pontos e concentração por bairro.
+- Mapa Leaflet com base OpenStreetMap por padrão; o Google Maps pode ser ativado em **Mapa-base** com uma chave de API restrita ao domínio.
 - Filtros por categoria, período e bairro, indicadores, gráficos e fila ordenada pelo índice experimental de prioridade.
 - Contas individuais com confirmação limitada a uma vez por conta para cada ocorrência.
 
@@ -37,7 +37,7 @@ O índice serve apenas para ordenar os registros do protótipo. Não é uma aval
 
 ## Limites desta versão
 
-- Não há moderação, upload de fotos ou integração com prefeituras.
+- Não há moderação nem integração com prefeituras.
 - A conta `adm` / `adm` existe para demonstração local; troque essa senha antes de publicar o sistema.
 - A amostra de demonstração é fictícia e não deve ser interpretada como retrato oficial da cidade.
 - Os mapas e fontes externas precisam de conexão com a internet.
