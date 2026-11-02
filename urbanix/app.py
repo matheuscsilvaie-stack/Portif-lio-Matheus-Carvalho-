@@ -1,6 +1,3 @@
-Failed to create stream fd: Operation not permitted
-Failed to create stream fd: Operation not permitted
-Failed to create stream fd: Operation not permitted
 """API local do Cidade Invisível com contas e relatos da comunidade.
 
 Execute com ``flask --app app run`` a partir desta pasta. Os registros ficam
