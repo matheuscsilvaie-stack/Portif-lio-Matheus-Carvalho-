@@ -5,6 +5,8 @@ em SQLite e o caminho pode ser configurado com URBANIX_DB_PATH.
 """
 
 import os
+import base64
+import binascii
 import secrets
 import sqlite3
 from contextlib import contextmanager
@@ -16,6 +18,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = Path(os.environ.get("URBANIX_DB_PATH", BASE_DIR / "instance" / "urbanix.sqlite3"))
+UPLOAD_DIR = DB_PATH.parent / "uploads"
 CATEGORIAS = {"infraestrutura", "acessibilidade", "iluminacao", "residuos", "outros"}
 
 app = Flask(__name__)
@@ -38,6 +41,7 @@ def chave_sessao():
 
 app.config.update(
     SECRET_KEY=chave_sessao(),
+    MAX_CONTENT_LENGTH=2_200_000,
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
 )
@@ -78,6 +82,7 @@ def inicializar_banco():
                 longitude REAL NOT NULL CHECK (longitude BETWEEN -180 AND 180),
                 confirmacoes INTEGER NOT NULL DEFAULT 0 CHECK (confirmacoes >= 0),
                 usuario_id INTEGER REFERENCES usuarios(id),
+                foto_path TEXT,
                 criado_em TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
             )"""
         )
@@ -93,6 +98,8 @@ def inicializar_banco():
         columns = {row[1] for row in conn.execute("PRAGMA table_info(occurrences)")}
         if "usuario_id" not in columns:
             conn.execute("ALTER TABLE occurrences ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id)")
+        if "foto_path" not in columns:
+            conn.execute("ALTER TABLE occurrences ADD COLUMN foto_path TEXT")
         conn.execute(
             """CREATE TABLE IF NOT EXISTS occurrence_confirmations (
                 occurrence_id INTEGER NOT NULL REFERENCES occurrences(id) ON DELETE CASCADE,
@@ -209,6 +216,7 @@ def criar_ocorrencia():
     categoria = payload.get("categoria")
     bairro = payload.get("bairro")
     descricao = payload.get("descricao", "")
+    foto = payload.get("foto")
     if not all(isinstance(value, str) and value.strip() for value in (titulo, categoria, bairro)):
         return jsonify(error="Título, categoria e bairro são obrigatórios."), 400
     if len(titulo.strip()) > 100 or len(bairro.strip()) > 100:
@@ -229,16 +237,52 @@ def criar_ocorrencia():
     if not -90 <= latitude <= 90 or not -180 <= longitude <= 180:
         return jsonify(error="Coordenadas fora dos limites válidos."), 400
 
+    foto_bytes = None
+    if foto:
+        prefixo = "data:image/jpeg;base64,"
+        if not isinstance(foto, str) or not foto.startswith(prefixo) or len(foto) > 2_000_000:
+            return jsonify(error="Foto inválida ou maior que o limite permitido."), 400
+        try:
+            foto_bytes = base64.b64decode(foto[len(prefixo):], validate=True)
+        except (ValueError, binascii.Error):
+            return jsonify(error="Não foi possível ler a foto enviada."), 400
+        if len(foto_bytes) > 1_500_000 or not foto_bytes.startswith(b"\xff\xd8\xff"):
+            return jsonify(error="A foto precisa ser JPEG e ter até 1,5 MB."), 400
+
+    foto_path = None
+    if foto_bytes:
+        UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+        foto_path = secrets.token_hex(16) + ".jpg"
+        (UPLOAD_DIR / foto_path).write_bytes(foto_bytes)
+
     inicializar_banco()
     with conectar() as conn:
         cursor = conn.execute(
             """INSERT INTO occurrences
-               (titulo, categoria, bairro, descricao, gravidade, latitude, longitude, usuario_id)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (titulo.strip(), categoria, bairro.strip(), descricao.strip(), gravidade, latitude, longitude, session["usuario_id"]),
+               (titulo, categoria, bairro, descricao, gravidade, latitude, longitude, usuario_id, foto_path)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (titulo.strip(), categoria, bairro.strip(), descricao.strip(), gravidade, latitude, longitude, session["usuario_id"], foto_path),
         )
         row = conn.execute("SELECT * FROM occurrences WHERE id = ?", (cursor.lastrowid,)).fetchone()
     return jsonify(serializar(row)), 201
+
+
+@app.get("/api/occurrences/<int:occurrence_id>/photo")
+def foto_ocorrencia(occurrence_id):
+    inicializar_banco()
+    with conectar() as conn:
+        row = conn.execute(
+            "SELECT foto_path FROM occurrences WHERE id = ?", (occurrence_id,)
+        ).fetchone()
+    if row is None or not row["foto_path"]:
+        return jsonify(error="Foto não encontrada."), 404
+    nome = row["foto_path"]
+    if Path(nome).name != nome or not nome.endswith(".jpg"):
+        return jsonify(error="Foto inválida."), 404
+    caminho = UPLOAD_DIR / nome
+    if not caminho.is_file():
+        return jsonify(error="Foto não encontrada."), 404
+    return send_file(caminho, mimetype="image/jpeg", max_age=3600)
 
 
 @app.post("/api/occurrences/<int:occurrence_id>/confirm")
