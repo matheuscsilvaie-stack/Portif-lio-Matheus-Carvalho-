@@ -1,47 +1,84 @@
 # Urbanix · Cidade Invisível
 
-**Demonstração pública:** [Abrir Urbanix](https://matheuscsilvaie-stack.github.io/Portif-lio-Matheus-Carvalho-/urbanix/). No GitHub Pages, use `adm` / `adm`; esta versão é uma prévia estática e guarda os relatos apenas no navegador.
+**Demonstração pública:** [Abrir Urbanix](https://matheuscsilvaie-stack.github.io/Portif-lio-Matheus-Carvalho-/urbanix/)
 
-MVP acadêmico para registrar ocorrências urbanas, localizá-las no mapa e consultar os dados por categoria, período e bairro. O mapa de demonstração usa Santos (SP) e inclui uma amostra fictícia identificada na interface.
+Plataforma comunitária para registrar problemas urbanos em Santos (SP), localizá-los no mapa e acompanhar o que precisa de atenção. Roda inteira no GitHub Pages, usando o [Supabase](https://supabase.com) como banco de dados, autenticação e armazenamento de fotos.
 
-## Executar localmente
+## O que funciona
 
-Requer Python 3.10 ou superior.
+- **Contas reais**: cadastro com e-mail, nome de usuário público e senha (mínimo de 8 caracteres), com confirmação por e-mail.
+- **Relatos compartilhados**: todo mundo vê os mesmos relatos, em qualquer aparelho. Visitantes podem explorar sem conta; para registrar ou confirmar, é preciso entrar.
+- **Fotos** enviadas pelo celular (comprimidas no navegador e guardadas no Supabase Storage).
+- **Confirmações**: uma por conta em cada relato; ninguém confirma o próprio relato.
+- **Moderação**: admins mudam o status (Aberto → Em andamento → Resolvido) e removem relatos; autores podem excluir os próprios relatos. Relatos resolvidos saem da fila de prioridade e ficam esmaecidos no mapa.
+- **Tempo real**: um relato novo aparece para todos sem recarregar a página.
+- **Anti-spam**: no máximo 10 relatos por conta a cada 24 horas.
+- **Modo demonstração**: se o `config.js` estiver vazio, o app abre com dados fictícios guardados só no navegador (login `adm` / `adm`).
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-flask --app app run --debug
+Toda a segurança fica no banco (Row Level Security): mesmo quem mexer no JavaScript pelo navegador não consegue se tornar admin, inflar confirmações, apagar relatos de outras pessoas ou subir fotos na pasta de outra conta.
+
+## Como colocar no ar (cerca de 10 minutos)
+
+### 1. Criar o projeto no Supabase
+1. Crie uma conta gratuita em [supabase.com](https://supabase.com) e clique em **New project**. Região sugerida: **South America (São Paulo)**.
+2. Quando o projeto terminar de iniciar, abra **SQL Editor → New query**, cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) e clique em **Run**. Isso cria as tabelas, as regras de segurança, o bucket de fotos e uma amostra fictícia de 5 relatos (que você pode apagar depois).
+
+### 2. Ligar o site ao banco
+1. No Supabase, vá em **Project Settings → API** (ou **Connect**) e copie a **Project URL** e a chave **anon / publishable**.
+2. Cole as duas no arquivo [`config.js`](config.js):
+   ```js
+   window.URBANIX_CONFIG = {
+     supabaseUrl: "https://SEU-PROJETO.supabase.co",
+     supabaseAnonKey: "eyJhbGciOi..."
+   };
+   ```
+   Essa chave pode ficar pública, porque quem protege os dados são as regras do banco. **Nunca** use a chave `service_role` / `secret` aqui.
+
+### 3. Configurar o login
+Em **Authentication → URL Configuration**:
+- **Site URL**: `https://matheuscsilvaie-stack.github.io/Portif-lio-Matheus-Carvalho-/urbanix/`
+- **Redirect URLs**: adicione o mesmo endereço.
+
+Assim, o link de confirmação do e-mail leva a pessoa de volta ao Urbanix.
+
+> O serviço de e-mail embutido do Supabase envia poucos e-mails por hora. Para uma demonstração de portfólio, você pode desligar a confirmação em **Authentication → Sign In / Providers → Email → Confirm email**: as contas passam a entrar direto. Para uso real, configure um SMTP próprio (Resend, Brevo etc.) em **Authentication → Emails → SMTP Settings**.
+
+### 4. Tornar sua conta admin
+Crie sua conta normalmente pelo site e depois rode no **SQL Editor** (troque pelo seu usuário):
+```sql
+update public.profiles set papel = 'admin' where usuario = 'seu_usuario';
 ```
+Saia e entre de novo: aparece "· admin" ao lado do seu nome, e os relatos passam a mostrar os controles de moderação.
 
-Acesse `http://127.0.0.1:5000`. O acesso inicial de demonstração é usuário `adm`, senha `adm` (papel `admin`). Outras pessoas podem criar uma conta na tela de login; cada conta tem seu próprio usuário e senha, senhas de novas contas precisam ter pelo menos oito caracteres e são armazenadas com hash. Cada conta pode confirmar um relato uma vez.
+### 5. Publicar
+Faça o commit e o push. O GitHub Pages atualiza em um ou dois minutos.
 
-Para apenas visualizar abrindo `index.html` diretamente, use `adm` / `adm`: essa prévia não autentica no servidor nem permite criar contas, e mantém relatos apenas neste navegador. Para contas reais e sincronização dos dados, abra o endereço do Flask acima.
+## Manutenção
 
-O banco SQLite é criado em `instance/urbanix.sqlite3`. Para escolher outro caminho, defina `URBANIX_DB_PATH` antes de iniciar o Flask. A chave de sessão local é criada em `instance/.session-key`; em produção, configure `URBANIX_SECRET_KEY` e use HTTPS. A senha `adm` é apenas para a demonstração local e deve ser alterada antes de qualquer publicação.
+- **Apagar a amostra fictícia**: `delete from public.occurrences where demo;`
+- **Plano gratuito**: o Supabase pausa projetos gratuitos que ficam cerca de uma semana sem nenhum acesso. Se o site parar de carregar relatos, entre no painel e clique em **Restore project**.
+- **Rodar localmente**: qualquer servidor estático serve, por exemplo `python -m http.server` dentro desta pasta, e então abra `http://localhost:8000`. Para o login funcionar localmente, adicione `http://localhost:8000` em **Redirect URLs**.
 
-## O que o MVP oferece
+## Estrutura
 
-- Cadastro de ocorrências com categoria, descrição, gravidade informada, foto opcional e ponto marcado no mapa.
-- Persistência local em SQLite por meio da API Flask; se a API estiver indisponível, os novos registros ficam no navegador atual.
-- Mapa Leaflet com base OpenStreetMap por padrão; o Google Maps pode ser ativado em **Mapa-base** com uma chave de API restrita ao domínio.
-- Filtros por categoria, período e bairro, indicadores, gráficos e fila ordenada pelo índice experimental de prioridade.
-- Contas individuais com confirmação limitada a uma vez por conta para cada ocorrência.
+| Arquivo | Função |
+|---|---|
+| `index.html` | Layout e estilos |
+| `app.js` | Lógica da aplicação (mapa, relatos, contas, moderação) |
+| `config.js` | URL e chave pública do Supabase |
+| `supabase/schema.sql` | Banco, regras de segurança, bucket de fotos e amostra |
+| `static/` | Logo e favicon |
 
 ## Prioridade experimental
 
-`gravidade (1–5 normalizada) × 0,50 + confirmações (até 10 normalizadas) × 0,30 + tempo (até 60 dias normalizado) × 0,20`.
+`gravidade (1–5 normalizada) × 0,50 + confirmações (até 10 normalizadas) × 0,30 + tempo (até 60 dias normalizado) × 0,20`
 
-O índice serve apenas para ordenar os registros do protótipo. Não é uma avaliação oficial de risco. Relatos e confirmações não são verificados oficialmente, e o sistema não indica que uma prefeitura recebeu ou resolveu uma ocorrência.
+O índice serve apenas para ordenar os relatos. Não é uma avaliação oficial de risco. Relatos e confirmações não são verificados oficialmente, e o sistema não indica que uma prefeitura recebeu ou resolveu uma ocorrência.
 
 ## Limites desta versão
 
-- Não há moderação nem integração com prefeituras.
-- A conta `adm` / `adm` existe para demonstração local; troque essa senha antes de publicar o sistema.
-- A amostra de demonstração é fictícia e não deve ser interpretada como retrato oficial da cidade.
-- Os mapas e fontes externas precisam de conexão com a internet.
+- Sem integração com prefeituras.
+- A moderação depende de admins definidos manualmente no banco.
+- Os mapas e as fontes externas precisam de conexão com a internet.
 
-O planejamento acadêmico completo está no PDF `Projeto_Cidade_Invisivel_Plano_de_Estudo.pdf` localizado na pasta `Projeto. adsprivado.urban`.
-
-O logo vetorial usado pela interface está em `static/urbanix-logo.svg`; o símbolo reduzido e o favicon estão em `static/urbanix-symbol.svg`.
+O planejamento acadêmico completo está no PDF `Projeto_Cidade_Invisivel_Plano_de_Estudo.pdf`, na pasta `Projeto. adsprivado.urban`. A versão anterior com Flask + SQLite continua disponível no histórico do Git.
